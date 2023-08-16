@@ -154,11 +154,10 @@ class ImageAnnotator:
         Returns:
             None
         If x_center or y_center are not given, the image will stay still and not move."""
-        
-        if x_center is None:
-            x_center = self.start_x + self.width // 2
-        if y_center is None:
-            y_center = self.start_y + self.height // 2
+
+        if not x_center and not y_center:
+            x_center, y_center = self.start_x + \
+                self.width // 2, self.start_y + self.height // 2
 
         new_height, new_width = int(
             self.height * self.zoom_scale), int(self.width * self.zoom_scale)
@@ -203,7 +202,7 @@ class ImageAnnotator:
 
     def annotate(self) -> bool:
         """Display the annotations on the image.
-        
+
         Returns:
             bool: True if the image needs to be saved, False otherwise."""
         cv2.namedWindow('Annotate')
