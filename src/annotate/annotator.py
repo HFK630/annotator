@@ -206,16 +206,21 @@ class ImageAnnotator:
 
         self.img_temp = self.img.copy()
 
-    def annotate(self):
-        """Display the annotations on the image."""
+    def annotate(self) -> bool:
+        """Display the annotations on the image.
+        
+        Returns:
+            bool: True if the image needs to be saved, False otherwise."""
         cv2.namedWindow('Annotate')
         cv2.setMouseCallback('Annotate', self.mouse_actions)
         while True:
             cv2.imshow('Annotate', self.img_temp)
             key = cv2.waitKey(1)
-            if key & 0xFF == ord('q'):
+            if key == ord('q'):
                 self._reset_image_size()  # Reset the image size before saving
-                break
+                return True  # Save the image
+            elif key == 27:  # ASCII for esc
+                return False  # Don't save the image
             elif key == 26:  # ASCII for ctrl+z
                 try:
                     self.undo()

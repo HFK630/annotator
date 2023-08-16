@@ -13,16 +13,17 @@ def main():
     for filename in os.listdir(PRE_ANNOTATED_IMAGE_FOLDER):
         filepath = os.path.join(PRE_ANNOTATED_IMAGE_FOLDER, filename)
         annotator = ImageAnnotator(filepath)
-        annotator.annotate()
+        save = annotator.annotate()
 
         # Save the annotated image
-        annotated_image_path = os.path.join(ANNOTATED_IMAGE_FOLDER, filename)
-        cv2.imwrite(annotated_image_path, annotator.img)
+        if save:
+            annotated_image_path = os.path.join(ANNOTATED_IMAGE_FOLDER, filename)
+            cv2.imwrite(annotated_image_path, annotator.img)
         
-        # Save the annotation file
-        annotation_file_path = os.path.join(ANNOTATED_IMAGE_FOLDER, filename.split('.')[0] + '.json')
-        with open(annotation_file_path, 'w') as file:
-            json.dump(annotator.annotation, file)
+            # Save the annotation file
+            annotation_file_path = os.path.join(ANNOTATED_IMAGE_FOLDER, filename.split('.')[0] + '.json')
+            with open(annotation_file_path, 'w') as file:
+                json.dump(annotator.annotation, file)
 
 
 if __name__ == "__main__":
