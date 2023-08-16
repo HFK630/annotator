@@ -2,50 +2,34 @@ import cv2
 import os
 import json
 import numpy as np
-from typing import List, Optional, Tuple, Dict
+from typing import Any, List, Optional, Tuple, Dict
 
 
 class ImageAnnotator:
     """Class to annotate images with bounding boxes."""
 
-    def __init__(self, img_path: str, darken_by: float = 0.5, resize_width: int = 1280, resize_height: int = 720) -> None:
-        self.resize_width = resize_width
-        self.resize_height = resize_height
-        self.img_original = self._re_scale(
-            img_path, self.resize_width, self.resize_height)
-        self.start_x, self.start_y = 0, 0
-        self.dragging = False
-        self.drag_start_x, self.drag_start_y = 0, 0
+    def __init__(
+        self,
+        img_path: str,
+        img: np.ndarray,
+        darken_by: float = 0.5
+    ) -> None:
+        self.img_original = img
+        self.height, self.width = self.img_original.shape[:2]
         self.img = self.img_original.copy()
         self.img_temp = self.img.copy()
-        self.drawing = False
-        self.top_left_pt = (-1, -1)
-        self.bottom_right_pt = (-1, -1)
         self.annotation: Dict[str, List[Tuple[Tuple[int, int], Tuple[int, int]]]] = {
             'image': os.path.basename(img_path), 'boxes': []}
+        self.scaled_boxes: List[Tuple[Tuple[int, int], Tuple[int, int]]] = []
+        self.start_x, self.start_y = 0, 0
+        self.drag_start_x, self.drag_start_y = 0, 0
         self.zoom_scale = 1.0
         self.last_created_box = []
         self.darken_by = darken_by
-
-    def _re_scale(self, image_path: str, wanted_width: int, wanted_hight: int) -> np.ndarray:
-        """return a resized image to fit the screen"""
-        original_img = cv2.imread(image_path)
-        height, width = original_img.shape[:2]
-        scale = min(wanted_width / width, wanted_hight / height)
-        new_width, new_height = int(width * scale), int(height * scale)
-
-        # Resize the original image
-        resized_img = cv2.resize(original_img, (new_width, new_height))
-
-        # Create a white canvas of size 1280x720
-        img_original = np.ones(
-            (wanted_hight, wanted_width, 3), dtype=np.uint8) * 255
-
-        self.start_x = (wanted_width - new_width) // 2
-        self.start_y = (wanted_hight - new_height) // 2
-        img_original[self.start_y:self.start_y + new_height,
-                     self.start_x:self.start_x + new_width] = resized_img
-        return img_original
+        self.dragging = False
+        self.drawing = False
+        self.top_left_pt = (-1, -1)
+        self.bottom_right_pt = (-1, -1)
 
     def _reset_image_size(self) -> None:
         """Reset the image size to the original size and removes text from the image."""
@@ -121,7 +105,14 @@ class ImageAnnotator:
         self.last_created_box = [annotation_box]
         self.update_image()  # Update the image without moving it.
 
-    def mouse_actions(self, event, x, y, flags, param) -> None:
+    def mouse_actions(
+        self,
+        event: int,
+        x: int,
+        y: int,
+        flags: int,
+        param: Optional[Any]
+    ) -> None:
         """Mouse actions on the image."""
         self.img_temp = self.img.copy()
 
@@ -150,7 +141,12 @@ class ImageAnnotator:
         elif event == cv2.EVENT_LBUTTONUP:
             self.set_rectangle(x, y)
 
-    def update_image(self, x_center: int = None, y_center: int = None, display_text: bool = True) -> None:
+    def update_image(
+        self,
+        x_center: Optional[int] = None,
+        y_center: Optional[int] = None,
+        display_text: bool = True
+    ) -> None:
         """Updates the image according to the zoom scale and the cropping coordinates.
         Args:
             x_center (int, optional): The x coordinate of the center of the zoom.
@@ -159,32 +155,32 @@ class ImageAnnotator:
         Returns:
             None
         If x_center or y_center are not given, the image will stay still and not move."""
+        
         if x_center is None:
-            x_center = self.start_x + self.resize_width // 2
+            x_center = self.start_x + self.width // 2
         if y_center is None:
-            y_center = self.start_y + self.resize_height // 2
+            y_center = self.start_y + self.height // 2
 
-        height, width = self.img_original.shape[:2]
         new_height, new_width = int(
-            height * self.zoom_scale), int(width * self.zoom_scale)
+            self.height * self.zoom_scale), int(self.width * self.zoom_scale)
 
         # Resizing the original image according to the zoom scale
         zoomed_image = cv2.resize(self.img_original, (new_width, new_height))
 
         # Calculating the cropping coordinates
-        self.start_x = min(max(x_center - self.resize_width //
-                           2, 0), new_width - self.resize_width)
-        self.start_y = min(max(y_center - self.resize_height //
-                           2, 0), new_height - self.resize_height)
-        end_x = self.start_x + self.resize_width
-        end_y = self.start_y + self.resize_height
+        self.start_x = min(max(x_center - self.width //
+                           2, 0), new_width - self.width)
+        self.start_y = min(max(y_center - self.height //
+                           2, 0), new_height - self.height)
+        end_x = self.start_x + self.width
+        end_y = self.start_y + self.height
 
         # Cropping the zoomed image to the window size
         cropped_image = zoomed_image[self.start_y:end_y, self.start_x:end_x]
 
         # Create a white canvas of size 1280x720
         self.img = np.ones(
-            (self.resize_height, self.resize_width, 3), dtype=np.uint8) * 255
+            (self.height, self.width, 3), dtype=np.uint8) * 255
 
         # Paste the cropped zoomed image onto the canvas
         self.img[:cropped_image.shape[0],
