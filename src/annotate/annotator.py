@@ -20,7 +20,6 @@ class ImageAnnotator:
         self.img_temp = self.img.copy()
         self.annotation: Dict[str, List[Tuple[Tuple[int, int], Tuple[int, int]]]] = {
             'image': os.path.basename(img_path), 'boxes': []}
-        self.scaled_boxes: List[Tuple[Tuple[int, int], Tuple[int, int]]] = []
         self.start_x, self.start_y = 0, 0
         self.drag_start_x, self.drag_start_y = 0, 0
         self.zoom_scale = 1.0
